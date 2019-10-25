@@ -14,6 +14,8 @@ import java.util.Map;
 
 public class BaseController {
 
+    public static final String CONTENT_TYPE_FORM = "application/x-www-form-urlencoded";
+
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.OK)
