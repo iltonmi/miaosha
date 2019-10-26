@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -23,7 +24,7 @@ import java.util.Random;
 
 @Controller("user")
 @RequestMapping("/user")
-@CrossOrigin(allowCredentials = "true", allowedHeaders = "*")
+@CrossOrigin(allowCredentials = "true", origins = "*")
 public class UserController extends BaseController{
 
     @Autowired
@@ -84,7 +85,7 @@ public class UserController extends BaseController{
         MessageDigest md5 = MessageDigest.getInstance("MD5");
         Base64.Encoder base64Encoder = Base64.getEncoder();
         //加密字符串
-        String newStr = base64Encoder.encodeToString(md5.digest(str.getBytes("utf-8")));
+        String newStr = base64Encoder.encodeToString(md5.digest(str.getBytes(StandardCharsets.UTF_8)));
         return newStr;
     }
 
