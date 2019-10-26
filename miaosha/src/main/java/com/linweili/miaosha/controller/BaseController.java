@@ -3,6 +3,8 @@ package com.linweili.miaosha.controller;
 import com.linweili.miaosha.error.BusinessException;
 import com.linweili.miaosha.error.EnumBusinessError;
 import com.linweili.miaosha.response.CommonReturnType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -13,6 +15,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BaseController {
+
+    private Logger logger = LoggerFactory.getLogger(BaseController.class);
 
     public static final String CONTENT_TYPE_FORM = "application/x-www-form-urlencoded";
 
@@ -29,6 +33,9 @@ public class BaseController {
         } else {
             responseData.put("errCode", EnumBusinessError.UNKNOWN_ERROR.getErrCode());
             responseData.put("errMsg", EnumBusinessError.UNKNOWN_ERROR.getErrMsgs());
+        }
+        if (ex != null){
+            logger.info(ex.getMessage());
         }
         return CommonReturnType.create(responseData, "fail");
     }
