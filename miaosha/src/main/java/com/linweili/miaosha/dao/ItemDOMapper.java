@@ -37,6 +37,8 @@ public interface ItemDOMapper {
      */
     ItemDO selectByPrimaryKey(Integer id);
 
+    int increaseSales(Integer id, Integer amount);
+
     List<ItemDO> listItem();
 
     /**
