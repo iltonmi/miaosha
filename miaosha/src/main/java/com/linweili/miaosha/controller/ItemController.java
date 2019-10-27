@@ -6,6 +6,8 @@ import com.linweili.miaosha.response.CommonReturnType;
 import com.linweili.miaosha.service.ItemService;
 import com.linweili.miaosha.service.impl.ItemServiceImpl;
 import com.linweili.miaosha.service.model.ItemModel;
+import com.linweili.miaosha.service.model.PromoModel;
+import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -69,6 +71,15 @@ public class ItemController extends BaseController {
         }
         ItemVO itemVO = new ItemVO();
         BeanUtils.copyProperties(itemModel, itemVO);
+        PromoModel promoModel = itemModel.getPromoModel();
+        if (promoModel != null) {
+            itemVO.setPromoId(promoModel.getId());
+            itemVO.setPromoPrice(promoModel.getPromoItemPrice());
+            itemVO.setStartDate(promoModel.getStartDate().toString(DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")));
+            itemVO.setPromoStatus(promoModel.getStatus());
+        } else {
+            itemVO.setPromoStatus(0);
+        }
         return itemVO;
     }
 }

@@ -8,6 +8,7 @@ import com.linweili.miaosha.error.BusinessException;
 import com.linweili.miaosha.error.EnumBusinessError;
 import com.linweili.miaosha.service.ItemService;
 import com.linweili.miaosha.service.model.ItemModel;
+import com.linweili.miaosha.service.model.PromoModel;
 import com.linweili.miaosha.validator.ValidationResult;
 import com.linweili.miaosha.validator.ValidatorImpl;
 import org.springframework.beans.BeanUtils;
@@ -30,6 +31,9 @@ public class ItemServiceImpl implements ItemService {
 
     @Autowired
     private ItemStockDOMapper itemStockDOMapper;
+
+    @Autowired
+    private PromoServiceImpl promoService;
 
     @Override
     @Transactional
@@ -98,6 +102,11 @@ public class ItemServiceImpl implements ItemService {
         ItemStockDO itemStockDO = itemStockDOMapper.selectByItemId(itemDO.getId());
         //将data object -> model
         ItemModel itemModel = this.convertModelFromDataObject(itemDO, itemStockDO);
+        //获取商品活动信息
+        PromoModel promoModel = promoService.getPromoByItemId(id);
+        if (promoModel != null && promoModel.getStatus() != 3) {
+            itemModel.setPromoModel(promoModel);
+        }
         return itemModel;
     }
 
