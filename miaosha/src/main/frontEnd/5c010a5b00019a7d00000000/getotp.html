@@ -5,6 +5,7 @@
 <link href="static\assets\global\css\components.css" rel="stylesheet" type="text/css">
 <link href="static\assets\admin\pages\css\login.css" rel="stylesheet" type="text/css">
 <script src="static\assets\global\plugins\jquery-1.11.0.min.js"></script>
+<script src="gethost.js"></script>
 </head>
 <body class="login">
     <div class="content">
@@ -34,7 +35,7 @@
             $.ajax({
                 type:"POST",
                 contentType:"application/x-www-form-urlencoded",
-                url:"http://localhost:8848/user/getotp",
+                url:"http://"+g_host+"/user/getotp",
                 dataType:"json",
                 data:{
                     "telephone":$("#telephone").val(),

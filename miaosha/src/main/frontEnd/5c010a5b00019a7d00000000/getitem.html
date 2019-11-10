@@ -5,6 +5,7 @@
 <link href="static\assets\global\css\components.css" rel="stylesheet" type="text/css">
 <link href="static\assets\admin\pages\css\login.css" rel="stylesheet" type="text/css">
 <script src="static\assets\global\plugins\jquery-1.11.0.min.js"></script>
+<script src="gethost.js"></script>
 </head>
 <body class="login">
     <div class="content">
@@ -80,7 +81,7 @@
             $.ajax({
                 type:"POST",
                 contentType:"application/x-www-form-urlencoded",
-                url:"http://localhost:8848/order/createorder",
+                url:"http://"+g_host+"/order/createorder",
                 dataType:"json",
                 data:{
                     "itemId":g_itemVO.id,
@@ -108,7 +109,7 @@
         });
         $.ajax({
             type:"GET",
-            url:"http://localhost:8848/item/get",
+            url:"http://"+g_host+"/item/get",
             dataType:"json",
             data:{
                 "id":getQueryVariable("id"),

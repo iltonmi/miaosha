@@ -112,6 +112,10 @@ public class UserController extends BaseController{
     @RequestMapping("/get")
     @ResponseBody
     public CommonReturnType getUser(@RequestParam("id") Integer id) throws BusinessException {
+        Boolean isLogin = (Boolean) this.httpServletRequest.getSession().getAttribute("LOGIN");
+        if (isLogin == null || !isLogin.booleanValue()) {
+            throw new BusinessException(EnumBusinessError.USER_NOT_LOGIN, "用户未登录");
+        }
         //调用service服务获取对应ID的用户对象并返回给前端
         UserModel userModel = userService.getUserById(id);
 

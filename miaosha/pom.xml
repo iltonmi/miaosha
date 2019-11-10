@@ -82,15 +82,15 @@
 						<version>8.0.15</version>
 					</dependency>
 				</dependencies>
-				<executions>
-					<execution>
-						<id>mybatis generator</id>
-						<phase>package</phase>
-						<goals>
-							<goal>generate</goal>
-						</goals>
-					</execution>
-				</executions>
+<!--				<executions>-->
+<!--					<execution>-->
+<!--						<id>mybatis generator</id>-->
+<!--						<phase>package</phase>-->
+<!--						<goals>-->
+<!--							<goal>generate</goal>-->
+<!--						</goals>-->
+<!--					</execution>-->
+<!--				</executions>-->
 				<configuration>
 					<!--允许移动生成的文件-->
 					<verbose>true</verbose>

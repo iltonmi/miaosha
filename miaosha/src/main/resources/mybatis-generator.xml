@@ -10,7 +10,7 @@
         <jdbcConnection driverClass="com.mysql.cj.jdbc.Driver"
                         connectionURL="jdbc:mysql://localhost:3306/miaosha?useUnicode=true&amp;characterEncoding=utf8&amp;useSSL=false&amp;serverTimezone=GMT%2B8"
                         userId="root"
-                        password="clashroyal">
+                        password="root">
         </jdbcConnection>
 
         <javaTypeResolver >
@@ -61,11 +61,11 @@
                enableUpdateByExample="false" enableDeleteByExample="false"
                enableSelectByExample="false" selectByExampleQueryId="false"
         ></table>
-        -->
         <table tableName="promo" domainObjectName="PromoDO" enableCountByExample="false"
                enableUpdateByExample="false" enableDeleteByExample="false"
                enableSelectByExample="false" selectByExampleQueryId="false"
         ></table>
+        -->
 
     </context>
 </generatorConfiguration>
