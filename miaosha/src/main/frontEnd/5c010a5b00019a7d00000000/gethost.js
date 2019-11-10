@@ -1,1 +1,1 @@
-var g_host="miaosha.com";
+var g_host="localhost:8848";

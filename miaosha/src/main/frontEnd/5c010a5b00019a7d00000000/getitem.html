@@ -78,10 +78,16 @@
     }
     jQuery(document).ready(function(){
         $("#createorder").on("click", function(){
+            const token = window.localStorage["token"];
+            if (token === null) {
+                alert("没有登录，不能下单");
+                window.location.href="login.html";
+                return false;
+            }
             $.ajax({
                 type:"POST",
                 contentType:"application/x-www-form-urlencoded",
-                url:"http://"+g_host+"/order/createorder",
+                url:"http://"+g_host+"/order/createorder?token="+token,
                 dataType:"json",
                 data:{
                     "itemId":g_itemVO.id,
