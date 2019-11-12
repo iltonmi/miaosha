@@ -97,5 +97,6 @@
     <orderEntry type="library" name="Maven: org.jboss.logging:jboss-logging:3.4.1.Final" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml:classmate:1.5.0" level="project" />
     <orderEntry type="library" name="Maven: joda-time:joda-time:2.9.1" level="project" />
+    <orderEntry type="library" name="Maven: com.alibaba:fastjson:1.2.61" level="project" />
   </component>
 </module>

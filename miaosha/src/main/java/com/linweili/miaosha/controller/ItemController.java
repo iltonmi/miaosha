@@ -10,11 +10,13 @@ import com.linweili.miaosha.service.model.PromoModel;
 import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Controller("item")
@@ -24,6 +26,9 @@ public class ItemController extends BaseController {
 
     @Autowired
     private ItemServiceImpl itemService;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @RequestMapping(value = "/create", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORM})
     @ResponseBody
@@ -49,7 +54,15 @@ public class ItemController extends BaseController {
     @RequestMapping(value = "/get", method = {RequestMethod.GET})
     @ResponseBody
     public CommonReturnType getItem(@RequestParam("id") Integer id) {
-        ItemModel itemModel = itemService.getItemById(id);
+        //根据商品id到redis内获取
+        ItemModel itemModel = (ItemModel) redisTemplate.opsForValue().get("item_" + id);
+        //若redis内不存在对应itemModel则访问下游service
+        if (itemModel == null) {
+            itemModel = itemService.getItemById(id);
+            //设置itemModel到redis内
+            redisTemplate.opsForValue().set("item_"+id, itemModel);
+            redisTemplate.expire("item_"+id, 10, TimeUnit.MINUTES);
+        }
         ItemVO itemVO = this.convertVOFromModel(itemModel);
         return CommonReturnType.create(itemVO);
     }
