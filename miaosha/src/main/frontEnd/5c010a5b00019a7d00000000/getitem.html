@@ -162,7 +162,7 @@
         } else if (g_itemVO.promoStatus === 2) {
             //秒杀活动进行中
             $("#promoStartDate").text("秒杀正在进行中");
-
+            $("#promoPrice").text(g_itemVO.promoPrice);
             $("#createorder").attr("disabled", false);
             $("#normalPriceContainer").hide();
         } else if (g_itemVO.promoStatus === 0){
