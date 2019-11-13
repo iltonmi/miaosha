@@ -5,6 +5,7 @@ import com.linweili.miaosha.error.BusinessException;
 import com.linweili.miaosha.response.CommonReturnType;
 import com.linweili.miaosha.service.CacheService;
 import com.linweili.miaosha.service.impl.ItemServiceImpl;
+import com.linweili.miaosha.service.impl.PromoServiceImpl;
 import com.linweili.miaosha.service.model.ItemModel;
 import com.linweili.miaosha.service.model.PromoModel;
 import org.joda.time.format.DateTimeFormat;
@@ -32,6 +33,16 @@ public class ItemController extends BaseController {
 
     @Autowired
     private CacheService cacheService;
+
+    @Autowired
+    private PromoServiceImpl promoService;
+
+    @RequestMapping(value = "/publishpromo", method = {RequestMethod.GET})
+    @ResponseBody
+    public CommonReturnType publishPromo(@RequestParam("id") Integer id) {
+        promoService.publishPromo(id);
+        return CommonReturnType.create(null);
+    }
 
     @RequestMapping(value = "/create", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORM})
     @ResponseBody
