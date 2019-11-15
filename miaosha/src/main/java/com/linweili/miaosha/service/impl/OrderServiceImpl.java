@@ -2,8 +2,10 @@ package com.linweili.miaosha.service.impl;
 
 import com.linweili.miaosha.dao.OrderDOMapper;
 import com.linweili.miaosha.dao.SequenceDOMapper;
+import com.linweili.miaosha.dao.StockLogDOMapper;
 import com.linweili.miaosha.dataobject.OrderDO;
 import com.linweili.miaosha.dataobject.SequenceDO;
+import com.linweili.miaosha.dataobject.StockLogDO;
 import com.linweili.miaosha.error.BusinessException;
 import com.linweili.miaosha.error.EnumBusinessError;
 import com.linweili.miaosha.service.OrderService;
@@ -15,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import javax.sound.midi.Sequence;
 import java.math.BigDecimal;
@@ -36,11 +40,13 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private OrderDOMapper orderDOMapper;
 
-
+    @Autowired
+    private StockLogDOMapper stockLogDOMapper;
 
     @Override
     @Transactional
-    public OrderModel createOrder(Integer userId, Integer itemId, Integer promoId, Integer amount) throws BusinessException {
+    public OrderModel createOrder(Integer userId, Integer itemId, Integer promoId,
+                                  Integer amount, String stockLogId) throws BusinessException {
         //校验下单状态：下单商品是否存在，用户是否合法，购买数量是否正确
 //        ItemModel itemModel = itemService.getItemById(itemId);
         ItemModel itemModel = itemService.getItemByIdInCache(itemId);
@@ -92,6 +98,21 @@ public class OrderServiceImpl implements OrderService {
 
         //加上商品的销量
         itemService.increaseSales(itemId, amount);
+
+        //设置库存流水状态为成功
+        StockLogDO stockLogDO = stockLogDOMapper.selectByPrimaryKey(stockLogId);
+        if (stockLogDO == null) {
+            throw new BusinessException(EnumBusinessError.UNKNOWN_ERROR);
+        }
+        stockLogDO.setStatus(2);
+        stockLogDOMapper.updateByPrimaryKeySelective(stockLogDO);
+
+        try {
+            Thread.sleep(30000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         //返回前端
         return orderModel;
     }

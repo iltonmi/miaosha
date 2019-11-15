@@ -16,5 +16,12 @@ public interface ItemService {
 
     boolean decreaseStock(Integer itemId, Integer amount) throws BusinessException;
 
+    boolean increaseStock(Integer itemId, Integer amount) throws BusinessException;
+
+    boolean asyncDecreaseStock(Integer itemId, Integer amount);
+
+    //初始化库存流水状态
+    String initStockLog(Integer itemId, Integer amount);
+
     void increaseSales(Integer itemId, Integer amount) throws BusinessException;
 }

@@ -2,8 +2,10 @@ package com.linweili.miaosha.service.impl;
 
 import com.linweili.miaosha.dao.ItemDOMapper;
 import com.linweili.miaosha.dao.ItemStockDOMapper;
+import com.linweili.miaosha.dao.StockLogDOMapper;
 import com.linweili.miaosha.dataobject.ItemDO;
 import com.linweili.miaosha.dataobject.ItemStockDO;
+import com.linweili.miaosha.dataobject.StockLogDO;
 import com.linweili.miaosha.error.BusinessException;
 import com.linweili.miaosha.error.EnumBusinessError;
 import com.linweili.miaosha.mq.MqProducer;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -48,6 +51,9 @@ public class ItemServiceImpl implements ItemService {
 
     @Autowired
     private MqProducer mqProducer;
+
+    @Autowired
+    private StockLogDOMapper stockLogDOMapper;
 
     @Override
     public ItemModel getItemByIdInCache(Integer id) {
@@ -145,19 +151,44 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
+    public String initStockLog(Integer itemId, Integer amount) {
+        StockLogDO stockLogDO = new StockLogDO();
+        stockLogDO.setItemId(itemId);
+        stockLogDO.setAmount(amount);
+        stockLogDO.setStockLogId(UUID.randomUUID().toString().replaceAll("-", ""));
+        stockLogDO.setStatus(1);
+        stockLogDOMapper.insert(stockLogDO);
+
+        return stockLogDO.getStockLogId();
+    }
+
+    @Override
+    public boolean asyncDecreaseStock(Integer itemId, Integer amount) {
+        boolean result = mqProducer.asyncReduceStock(itemId, amount);
+        return result;
+    }
+
+    @Override
+    @Transactional
     public boolean decreaseStock(Integer itemId, Integer amount) throws BusinessException {
 //        int affectedRow = itemStockDOMapper.decreaseStock(itemId, amount);
         long result = redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, amount.intValue() * -1);
         if (result >= 0) {
-            if (!mqProducer.asyncReduceStock(itemId, amount)) {
-                redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, amount.intValue());
-                return false;
-            }
+//            if (!mqProducer.asyncReduceStock(itemId, amount)) {
+//                redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, amount.intValue());
+//                return false;
+//            }
             return true;
         } else {
-            redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, amount.intValue());
+            increaseStock(itemId, amount);
             return false;
         }
+    }
+
+    @Override
+    public boolean increaseStock(Integer itemId, Integer amount) throws BusinessException {
+        redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, amount.intValue());
+        return true;
     }
 
     @Override

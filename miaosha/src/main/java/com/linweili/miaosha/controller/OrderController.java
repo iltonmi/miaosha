@@ -2,7 +2,9 @@ package com.linweili.miaosha.controller;
 
 import com.linweili.miaosha.error.BusinessException;
 import com.linweili.miaosha.error.EnumBusinessError;
+import com.linweili.miaosha.mq.MqProducer;
 import com.linweili.miaosha.response.CommonReturnType;
+import com.linweili.miaosha.service.impl.ItemServiceImpl;
 import com.linweili.miaosha.service.impl.OrderServiceImpl;
 import com.linweili.miaosha.service.model.OrderModel;
 import com.linweili.miaosha.service.model.UserModel;
@@ -23,10 +25,16 @@ public class OrderController extends BaseController {
     private OrderServiceImpl orderService;
 
     @Autowired
+    private ItemServiceImpl itemService;
+
+    @Autowired
     private HttpServletRequest httpServletRequest;
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    @Autowired
+    private MqProducer mqProducer;
 
     @RequestMapping(value = "/createorder", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORM})
     @ResponseBody
@@ -48,8 +56,14 @@ public class OrderController extends BaseController {
         }
 //        UserModel userModel = (UserModel) this.httpServletRequest.getSession().getAttribute("LOGIN_USER");
 
-        OrderModel orderModel = orderService.createOrder(userModel.getId(), itemID, promoId, amount);
+//        OrderModel orderModel = orderService.createOrder(userModel.getId(), itemID, promoId, amount);
 
+        //加入库存流水init状态
+        String stockLogId = itemService.initStockLog(itemID, amount);
+        //再完成对应的下单事务消息
+        if (!mqProducer.transactionAsyncReduceStock(userModel.getId(), promoId, itemID, amount, stockLogId)) {
+            throw  new BusinessException(EnumBusinessError.UNKNOWN_ERROR, "下单失败");
+        }
         return CommonReturnType.create(null);
     }
 }
