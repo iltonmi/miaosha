@@ -57,7 +57,10 @@ public class OrderController extends BaseController {
 //        UserModel userModel = (UserModel) this.httpServletRequest.getSession().getAttribute("LOGIN_USER");
 
 //        OrderModel orderModel = orderService.createOrder(userModel.getId(), itemID, promoId, amount);
-
+        //判断库存是否售罄
+        if (redisTemplate.hasKey("promo_item_stock_invalid_" + itemID)) {
+            throw  new BusinessException(EnumBusinessError.STOCK_NOT_ENOUGH);
+        }
         //加入库存流水init状态
         String stockLogId = itemService.initStockLog(itemID, amount);
         //再完成对应的下单事务消息
