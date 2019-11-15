@@ -15,7 +15,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
+import java.util.concurrent.*;
 
 @Controller("order")
 @RequestMapping("/order")
@@ -39,6 +41,14 @@ public class OrderController extends BaseController {
 
     @Autowired
     private PromoServiceImpl promoService;
+
+    private ExecutorService executorService;
+
+    @PostConstruct
+    public void init() {
+        executorService = Executors.newFixedThreadPool(20);
+
+    }
 
     @RequestMapping(value = "/generatetoken", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORM})
     @ResponseBody
@@ -89,12 +99,27 @@ public class OrderController extends BaseController {
             }
         }
 
-        //加入库存流水init状态
-        String stockLogId = itemService.initStockLog(itemID, amount);
-        //再完成对应的下单事务消息
-        if (!mqProducer.transactionAsyncReduceStock(userModel.getId(), promoId, itemID, amount, stockLogId)) {
-            throw  new BusinessException(EnumBusinessError.UNKNOWN_ERROR, "下单失败");
+        //同步调用线程池的submit方法
+        //拥塞窗口为20的等待队列，用来队列化泄洪
+        Future<Object> future = executorService.submit(() -> {
+            //加入库存流水init状态
+            String stockLogId = itemService.initStockLog(itemID, amount);
+            //再完成对应的下单事务消息
+            if (!mqProducer.transactionAsyncReduceStock(userModel.getId(), promoId, itemID, amount, stockLogId)) {
+                throw  new BusinessException(EnumBusinessError.UNKNOWN_ERROR, "下单失败");
+            }
+            return null;
+        });
+
+        try {
+            future.get();
+        } catch (InterruptedException e) {
+            throw new BusinessException(EnumBusinessError.UNKNOWN_ERROR);
+        } catch (ExecutionException e) {
+            throw new BusinessException(EnumBusinessError.UNKNOWN_ERROR);
         }
+
+
         return CommonReturnType.create(null);
     }
 }
