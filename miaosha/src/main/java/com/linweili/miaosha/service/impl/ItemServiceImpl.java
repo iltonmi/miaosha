@@ -6,11 +6,16 @@ import com.linweili.miaosha.dataobject.ItemDO;
 import com.linweili.miaosha.dataobject.ItemStockDO;
 import com.linweili.miaosha.error.BusinessException;
 import com.linweili.miaosha.error.EnumBusinessError;
+import com.linweili.miaosha.mq.MqProducer;
 import com.linweili.miaosha.service.ItemService;
 import com.linweili.miaosha.service.model.ItemModel;
 import com.linweili.miaosha.service.model.PromoModel;
 import com.linweili.miaosha.validator.ValidationResult;
 import com.linweili.miaosha.validator.ValidatorImpl;
+import org.apache.rocketmq.client.exception.MQBrokerException;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -40,6 +45,9 @@ public class ItemServiceImpl implements ItemService {
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    @Autowired
+    private MqProducer mqProducer;
 
     @Override
     public ItemModel getItemByIdInCache(Integer id) {
@@ -140,7 +148,16 @@ public class ItemServiceImpl implements ItemService {
     public boolean decreaseStock(Integer itemId, Integer amount) throws BusinessException {
 //        int affectedRow = itemStockDOMapper.decreaseStock(itemId, amount);
         long result = redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, amount.intValue() * -1);
-        return result >= 0;
+        if (result >= 0) {
+            if (!mqProducer.asyncReduceStock(itemId, amount)) {
+                redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, amount.intValue());
+                return false;
+            }
+            return true;
+        } else {
+            redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, amount.intValue());
+            return false;
+        }
     }
 
     @Override
