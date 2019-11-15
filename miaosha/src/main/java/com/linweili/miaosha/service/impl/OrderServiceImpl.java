@@ -53,25 +53,24 @@ public class OrderServiceImpl implements OrderService {
         if (itemModel == null) {
             throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "商品信息不存在");
         }
-//        UserModel userModel = userService.getUserById(userId);
-        UserModel userModel = userService.getUserByIdInCache(userId);
-        if (userModel == null) {
-            throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "用户信息不存在");
-        }
-        if (amount <= 0 || amount > 99) {
-            throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "数量信息不正确");
-        }
+//        UserModel userModel = userService.getUserByIdInCache(userId);
+//        if (userModel == null) {
+//            throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "用户信息不存在");
+//        }
+//        if (amount <= 0 || amount > 99) {
+//            throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "数量信息不正确");
+//        }
 
         //校验活动信息
-        if (promoId != null) {
-            //1校验对应活动是否存在这个使用商品
-            if (promoId.intValue() != itemModel.getPromoModel().getId()) {
-                throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "活动信息不正确");
-            } else if (itemModel.getPromoModel().getStatus() != 2) {
-                //2校验活动是否进行中
-                throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "活动时间已过期");
-            }
-        }
+//        if (promoId != null) {
+//            //1校验对应活动是否存在这个使用商品
+//            if (promoId.intValue() != itemModel.getPromoModel().getId()) {
+//                throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "活动信息不正确");
+//            } else if (itemModel.getPromoModel().getStatus() != 2) {
+//                //2校验活动是否进行中
+//                throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "活动时间已过期");
+//            }
+//        }
 
         //落单减库存(区分于支付减库存)
         boolean decreaseStockSuccess = itemService.decreaseStock(itemId, amount);

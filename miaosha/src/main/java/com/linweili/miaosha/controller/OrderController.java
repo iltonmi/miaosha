@@ -6,6 +6,7 @@ import com.linweili.miaosha.mq.MqProducer;
 import com.linweili.miaosha.response.CommonReturnType;
 import com.linweili.miaosha.service.impl.ItemServiceImpl;
 import com.linweili.miaosha.service.impl.OrderServiceImpl;
+import com.linweili.miaosha.service.impl.PromoServiceImpl;
 import com.linweili.miaosha.service.model.OrderModel;
 import com.linweili.miaosha.service.model.UserModel;
 import org.apache.commons.lang3.StringUtils;
@@ -36,15 +37,37 @@ public class OrderController extends BaseController {
     @Autowired
     private MqProducer mqProducer;
 
+    @Autowired
+    private PromoServiceImpl promoService;
+
+    @RequestMapping(value = "/generatetoken", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORM})
+    @ResponseBody
+    public CommonReturnType generateToken(@RequestParam("itemId") Integer itemID,
+                                       @RequestParam(value = "promoId", required = false) Integer promoId) throws BusinessException {
+        //获取token
+        String token = httpServletRequest.getParameterMap().get("token")[0];
+        if (StringUtils.isEmpty(token)) {
+            throw new BusinessException(EnumBusinessError.USER_NOT_LOGIN, "用户未登录");
+        }
+        //获取用户的登录信息
+        UserModel userModel = (UserModel) redisTemplate.opsForValue().get(token);
+        if (userModel == null) {
+            throw new BusinessException(EnumBusinessError.USER_NOT_LOGIN, "用户未登录");
+        }
+        //获取秒杀令牌
+        String promoToken = promoService.generateSecondKillToken(promoId, itemID, userModel.getId());
+        if (promoToken == null) {
+            throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "生成令牌失败");
+        }
+        return CommonReturnType.create(promoToken);
+    }
+
     @RequestMapping(value = "/createorder", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORM})
     @ResponseBody
     public CommonReturnType createItem(@RequestParam("itemId") Integer itemID,
                                        @RequestParam("amount") Integer amount,
-                                       @RequestParam(value = "promoId", required = false) Integer promoId) throws BusinessException {
-//        Boolean isLogin = (Boolean) this.httpServletRequest.getSession().getAttribute("LOGIN");
-//        if (isLogin == null || !isLogin.booleanValue()) {
-//            throw new BusinessException(EnumBusinessError.USER_NOT_LOGIN, "用户未登录，不能下单");
-//        }
+                                       @RequestParam(value = "promoId", required = false) Integer promoId,
+                                       @RequestParam(value = "promoToken", required = false) String promoToken) throws BusinessException {
         String token = httpServletRequest.getParameterMap().get("token")[0];
         if (StringUtils.isEmpty(token)) {
             throw new BusinessException(EnumBusinessError.USER_NOT_LOGIN, "用户未登录，不能下单");
@@ -54,9 +77,18 @@ public class OrderController extends BaseController {
         if (userModel == null) {
             throw new BusinessException(EnumBusinessError.USER_NOT_LOGIN, "用户未登录，不能下单");
         }
-//        UserModel userModel = (UserModel) this.httpServletRequest.getSession().getAttribute("LOGIN_USER");
+        //校验秒杀令牌是否正确
+        if (promoId != null) {
+            String inRedisPromoToken = (String) redisTemplate.opsForValue().
+                    get("promo_token_" + promoId + "_userid_" + userModel.getId() + "_itemid_" + itemID);
+            if (inRedisPromoToken == null) {
+                throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "秒杀令牌校验失败");
+            }
+            if (!StringUtils.equals(promoToken, inRedisPromoToken)) {
+                throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "秒杀令牌校验失败");
+            }
+        }
 
-//        OrderModel orderModel = orderService.createOrder(userModel.getId(), itemID, promoId, amount);
         //判断库存是否售罄
         if (redisTemplate.hasKey("promo_item_stock_invalid_" + itemID)) {
             throw  new BusinessException(EnumBusinessError.STOCK_NOT_ENOUGH);
