@@ -1,5 +1,6 @@
 package com.linweili.miaosha.controller;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.linweili.miaosha.error.BusinessException;
 import com.linweili.miaosha.error.EnumBusinessError;
 import com.linweili.miaosha.mq.MqProducer;
@@ -50,9 +51,12 @@ public class OrderController extends BaseController {
 
     private ExecutorService executorService;
 
+    private RateLimiter orderCreateRateLimiter;
+
     @PostConstruct
     public void init() {
         executorService = Executors.newFixedThreadPool(20);
+        orderCreateRateLimiter = RateLimiter.create(100);
     }
 
     @RequestMapping(value = "/generateverifycode", method = {RequestMethod.POST, RequestMethod.GET})
@@ -111,6 +115,9 @@ public class OrderController extends BaseController {
                                        @RequestParam("amount") Integer amount,
                                        @RequestParam(value = "promoId", required = false) Integer promoId,
                                        @RequestParam(value = "promoToken", required = false) String promoToken) throws BusinessException {
+        if (orderCreateRateLimiter.acquire() < 0) {
+            throw new BusinessException(EnumBusinessError.RATE_LIMIT);
+        }
         String token = httpServletRequest.getParameterMap().get("token")[0];
         if (StringUtils.isEmpty(token)) {
             throw new BusinessException(EnumBusinessError.USER_NOT_LOGIN, "用户未登录，不能下单");
