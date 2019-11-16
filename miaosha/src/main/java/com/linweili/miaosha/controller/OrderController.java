@@ -9,6 +9,7 @@ import com.linweili.miaosha.service.impl.OrderServiceImpl;
 import com.linweili.miaosha.service.impl.PromoServiceImpl;
 import com.linweili.miaosha.service.model.OrderModel;
 import com.linweili.miaosha.service.model.UserModel;
+import com.linweili.miaosha.util.CodeUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -16,7 +17,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PostConstruct;
+import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.awt.image.RenderedImage;
+import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.*;
 
 @Controller("order")
@@ -47,13 +53,12 @@ public class OrderController extends BaseController {
     @PostConstruct
     public void init() {
         executorService = Executors.newFixedThreadPool(20);
-
     }
 
-    @RequestMapping(value = "/generatetoken", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORM})
+    @RequestMapping(value = "/generateverifycode", method = {RequestMethod.POST, RequestMethod.GET})
     @ResponseBody
-    public CommonReturnType generateToken(@RequestParam("itemId") Integer itemID,
-                                       @RequestParam(value = "promoId", required = false) Integer promoId) throws BusinessException {
+    public void generateVerifyCode(HttpServletResponse httpServletResponse)
+            throws BusinessException, IOException {
         //获取token
         String token = httpServletRequest.getParameterMap().get("token")[0];
         if (StringUtils.isEmpty(token)) {
@@ -63,6 +68,34 @@ public class OrderController extends BaseController {
         UserModel userModel = (UserModel) redisTemplate.opsForValue().get(token);
         if (userModel == null) {
             throw new BusinessException(EnumBusinessError.USER_NOT_LOGIN, "用户未登录");
+        }
+        Map<String, Object> map = CodeUtil.generateCodeAndPic();
+        redisTemplate.opsForValue().set("verify_code_" + userModel.getId(), map.get("code"));
+        redisTemplate.expire("verify_code_" + userModel.getId(), 10, TimeUnit.MINUTES);
+        ImageIO.write((RenderedImage) map.get("codePic"), "jpeg", httpServletResponse.getOutputStream());
+    }
+
+    @RequestMapping(value = "/generatetoken", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORM})
+    @ResponseBody
+    public CommonReturnType generateToken(@RequestParam("itemId") Integer itemID,
+                                          @RequestParam("promoId") Integer promoId,
+                                          @RequestParam("verifyCode") String verifyCode) throws BusinessException {
+        //获取token
+        String token = httpServletRequest.getParameterMap().get("token")[0];
+        if (StringUtils.isEmpty(token)) {
+            throw new BusinessException(EnumBusinessError.USER_NOT_LOGIN, "用户未登录");
+        }
+        //获取用户的登录信息
+        UserModel userModel = (UserModel) redisTemplate.opsForValue().get(token);
+        if (userModel == null) {
+            throw new BusinessException(EnumBusinessError.USER_NOT_LOGIN, "用户未登录");
+        }
+        String inRedisVerifyCode = (String) redisTemplate.opsForValue().get("verify_code_" + userModel.getId());
+        if (StringUtils.isEmpty(inRedisVerifyCode)) {
+            throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "请求非法");
+        }
+        if (!inRedisVerifyCode.equalsIgnoreCase(verifyCode)) {
+            throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "请求非法，验证码错误");
         }
         //获取秒杀令牌
         String promoToken = promoService.generateSecondKillToken(promoId, itemID, userModel.getId());
