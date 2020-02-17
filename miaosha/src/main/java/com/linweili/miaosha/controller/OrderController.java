@@ -94,6 +94,7 @@ public class OrderController extends BaseController {
         if (userModel == null) {
             throw new BusinessException(EnumBusinessError.USER_NOT_LOGIN, "用户未登录");
         }
+        //验证码校验
         String inRedisVerifyCode = (String) redisTemplate.opsForValue().get("verify_code_" + userModel.getId());
         if (StringUtils.isEmpty(inRedisVerifyCode)) {
             throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "请求非法");
@@ -101,7 +102,7 @@ public class OrderController extends BaseController {
         if (!inRedisVerifyCode.equalsIgnoreCase(verifyCode)) {
             throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "请求非法，验证码错误");
         }
-        //获取秒杀令牌
+        //获取秒杀令牌,对活动信息，商品库存，用户和商品是否存在
         String promoToken = promoService.generateSecondKillToken(promoId, itemID, userModel.getId());
         if (promoToken == null) {
             throw new BusinessException(EnumBusinessError.PARAMETER_VALIDATION_ERROR, "生成令牌失败");
@@ -115,6 +116,7 @@ public class OrderController extends BaseController {
                                        @RequestParam("amount") Integer amount,
                                        @RequestParam(value = "promoId", required = false) Integer promoId,
                                        @RequestParam(value = "promoToken", required = false) String promoToken) throws BusinessException {
+        //返回剩余令牌
         if (orderCreateRateLimiter.acquire() < 0) {
             throw new BusinessException(EnumBusinessError.RATE_LIMIT);
         }

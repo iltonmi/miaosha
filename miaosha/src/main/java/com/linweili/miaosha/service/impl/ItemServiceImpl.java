@@ -164,6 +164,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public boolean asyncDecreaseStock(Integer itemId, Integer amount) {
+        //投放消息是否成功
         boolean result = mqProducer.asyncReduceStock(itemId, amount);
         return result;
     }

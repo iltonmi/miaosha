@@ -73,9 +73,16 @@ public class MqProducer {
                 return LocalTransactionState.COMMIT_MESSAGE;
             }
 
+            /**
+             * 在以下情况：若executeLocalTransaction长时间不返回，或者返回UNKNOW到消息中间件
+             * 被中间件定期回调此方法检查事务状态
+             * @param msg
+             * @return
+             */
             @Override
             public LocalTransactionState checkLocalTransaction(MessageExt msg) {
                 //根据是否扣减库存成功，来判断要返回COMMIT,ROLLBACK还是UNKNOWN
+                //和消费端收到的消息是一样的，仅仅凭借itemId,和amount无法判断
                 String jsonString = new String(msg.getBody());
                 Map<String, Object> map = JSON.parseObject(jsonString, Map.class);
                 Integer itemId = (Integer) map.get("itemId");
@@ -97,20 +104,23 @@ public class MqProducer {
     }
 
     /**
-     * 事务性同步库存扣减消息
+     * 异步（形容词）方式事务性同步（动词）库存扣减消息
      */
     public boolean transactionAsyncReduceStock(Integer userId, Integer promoId, Integer itemId,
                                                Integer amount, String stockLogId) {
+        //
         Map<String, Object> bodyMap = new HashMap<>();
         bodyMap.put("itemId", itemId);
         bodyMap.put("amount", amount);
         bodyMap.put("stockLogId", stockLogId);
+        //executeLocalTransaction的方法参数
         Map<String, Object> argsMap = new HashMap<>();
         argsMap.put("itemId", itemId);
         argsMap.put("amount", amount);
         argsMap.put("userId", userId);
         argsMap.put("promoId", promoId);
         argsMap.put("stockLogId", stockLogId);
+        //消费者的JSON消息
         Message message = new Message(topicName, "increase",
                 JSON.toJSON(bodyMap).toString().getBytes(Charset.forName("UTF-8")));
         TransactionSendResult result = null;
@@ -130,7 +140,7 @@ public class MqProducer {
     }
 
     /**
-     * 同步库存扣减消息
+     * 异步（形容词）方式同步（动词）库存扣减消息
      */
     public boolean asyncReduceStock(Integer itemId, Integer amount) {
         Map<String, Object> bodyMap = new HashMap<>();

@@ -11,16 +11,12 @@ import com.linweili.miaosha.error.EnumBusinessError;
 import com.linweili.miaosha.service.OrderService;
 import com.linweili.miaosha.service.model.ItemModel;
 import com.linweili.miaosha.service.model.OrderModel;
-import com.linweili.miaosha.service.model.UserModel;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import javax.sound.midi.Sequence;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -77,7 +73,7 @@ public class OrderServiceImpl implements OrderService {
         if (!decreaseStockSuccess) {
             throw new BusinessException(EnumBusinessError.STOCK_NOT_ENOUGH);
         }
-        //订单入户
+        //订单入库
         OrderModel orderModel = new OrderModel();
         orderModel.setUserId(userId);
         orderModel.setItemId(itemId);
@@ -91,12 +87,15 @@ public class OrderServiceImpl implements OrderService {
         orderModel.setOrderPrice(orderModel.getItemPrice().multiply(BigDecimal.valueOf(amount)));
 
         //生成交易流水号
-        orderModel.setId(generateOrderN0());
+        orderModel.setId(generateOrderNo());
         OrderDO orderDO = this.convertFromOrderModel(orderModel);
         orderDOMapper.insertSelective(orderDO);
 
         //加上商品的销量
         itemService.increaseSales(itemId, amount);
+
+        //解决方法4：使用（TSManager）事务同步管理器注册一个（TSAdapter）同步适配器，重写afterCommit方法，待事务提交成功之后再发送异步消息
+        //分析4：存在问题：若异步消息投递失败，消息永远丢失，减库存的消息无法投递到数据库
 
         //设置库存流水状态为成功
         StockLogDO stockLogDO = stockLogDOMapper.selectByPrimaryKey(stockLogId);
@@ -111,7 +110,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    protected String generateOrderN0() {
+    protected String generateOrderNo() {
         //订单号16位
         StringBuilder stringBuilder = new StringBuilder();
         //前8位时间信息,年月日
