@@ -112,10 +112,10 @@ public class OrderController extends BaseController {
 
     @RequestMapping(value = "/createorder", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORM})
     @ResponseBody
-    public CommonReturnType createItem(@RequestParam("itemId") Integer itemID,
-                                       @RequestParam("amount") Integer amount,
-                                       @RequestParam(value = "promoId", required = false) Integer promoId,
-                                       @RequestParam(value = "promoToken", required = false) String promoToken) throws BusinessException {
+    public CommonReturnType createOrder(@RequestParam("itemId") Integer itemID,
+                                        @RequestParam("amount") Integer amount,
+                                        @RequestParam(value = "promoId", required = false) Integer promoId,
+                                        @RequestParam(value = "promoToken", required = false) String promoToken) throws BusinessException {
         //返回剩余令牌
         if (orderCreateRateLimiter.acquire() < 0) {
             throw new BusinessException(EnumBusinessError.RATE_LIMIT);
